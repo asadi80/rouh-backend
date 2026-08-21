@@ -45,6 +45,7 @@ create table users (
   role employee_role not null default 'staff',
   job_title text,
   is_active boolean not null default true,
+  must_change_password boolean NOT NULL DEFAULT false,
   created_at timestamptz not null default now()
 );
 
