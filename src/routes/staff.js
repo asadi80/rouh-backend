@@ -9,7 +9,7 @@ const router = Router();
 router.get("/", requireAuth, requireRole("super_admin"), async (req, res) => {
   try {
     const { rows } = await pool.query(
-      "select id, full_name, email, role, job_title, is_active, created_at from users order by created_at asc"
+      "select id, full_name, email, role, job_title, is_active, created_at from users order by created_at asc",
     );
 
     res.json(rows);
@@ -37,10 +37,9 @@ router.post("/", requireAuth, requireRole("super_admin"), async (req, res) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    const existing = await pool.query(
-      "select id from users where email = $1",
-      [normalizedEmail]
-    );
+    const existing = await pool.query("select id from users where email = $1", [
+      normalizedEmail,
+    ]);
 
     if (existing.rows.length) {
       return res.status(409).json({
@@ -53,10 +52,11 @@ router.post("/", requireAuth, requireRole("super_admin"), async (req, res) => {
 
     const { rows } = await pool.query(
       `insert into users
-        (id, full_name, email, password_hash, role, job_title)
-       values
-        ($1, $2, $3, $4, $5, $6)
-       returning id, full_name, email, role, job_title, is_active, created_at`,
+    (id, full_name, email, password_hash, role, job_title, must_change_password)
+   values
+    ($1, $2, $3, $4, $5, $6, true)
+   returning id, full_name, email, role, job_title, is_active,
+             must_change_password, created_at`,
       [
         id,
         full_name.trim(),
@@ -64,7 +64,7 @@ router.post("/", requireAuth, requireRole("super_admin"), async (req, res) => {
         password_hash,
         role || "staff",
         job_title || null,
-      ]
+      ],
     );
 
     res.status(201).json(rows[0]);
@@ -83,62 +83,67 @@ router.post("/", requireAuth, requireRole("super_admin"), async (req, res) => {
   }
 });
 
-router.put("/:id", requireAuth, requireRole("super_admin"), async (req, res) => {
-  try {
-    const { role, job_title, is_active, full_name } = req.body;
+router.put(
+  "/:id",
+  requireAuth,
+  requireRole("super_admin"),
+  async (req, res) => {
+    try {
+      const { role, job_title, is_active, full_name } = req.body;
 
-    if (
-      req.params.id === req.user.id &&
-      (role !== undefined || is_active !== undefined)
-    ) {
-      return res.status(400).json({
-        error: "لا يمكنك تعديل دورك أو حالتك الخاصة.",
-      });
-    }
+      if (
+        req.params.id === req.user.id &&
+        (role !== undefined || is_active !== undefined)
+      ) {
+        return res.status(400).json({
+          error: "لا يمكنك تعديل دورك أو حالتك الخاصة.",
+        });
+      }
 
-    const updates = [];
-    const values = [];
+      const updates = [];
+      const values = [];
 
-    const set = (field, value) => {
-      updates.push(`${field} = $${values.length + 1}`);
-      values.push(value);
-    };
+      const set = (field, value) => {
+        updates.push(`${field} = $${values.length + 1}`);
+        values.push(value);
+      };
 
-    if (role !== undefined) set("role", role);
-    if (job_title !== undefined) set("job_title", job_title);
-    if (is_active !== undefined) set("is_active", is_active);
-    if (full_name !== undefined) set("full_name", full_name);
+      if (role !== undefined) set("role", role);
+      if (job_title !== undefined) set("job_title", job_title);
+      if (is_active !== undefined) set("is_active", is_active);
+      if (full_name !== undefined) set("full_name", full_name);
 
-    if (!updates.length) {
-      return res.status(400).json({
-        error: "لا توجد بيانات للتحديث.",
-      });
-    }
+      if (!updates.length) {
+        return res.status(400).json({
+          error: "لا توجد بيانات للتحديث.",
+        });
+      }
 
-    values.push(req.params.id);
+      values.push(req.params.id);
 
-    const { rows } = await pool.query(
-      `update users
+      const { rows } = await pool.query(
+        `update users
        set ${updates.join(", ")}
        where id = $${values.length}
        returning id, full_name, email, role, job_title, is_active, created_at`,
-      values
-    );
+        values,
+      );
 
-    if (!rows[0]) {
-      return res.status(404).json({
-        error: "المستخدم غير موجود.",
+      if (!rows[0]) {
+        return res.status(404).json({
+          error: "المستخدم غير موجود.",
+        });
+      }
+
+      res.json(rows[0]);
+    } catch (err) {
+      console.error("PUT /api/staff/:id error:", err);
+      res.status(500).json({
+        error: "خطأ في السيرفر.",
       });
     }
-
-    res.json(rows[0]);
-  } catch (err) {
-    console.error("PUT /api/staff/:id error:", err);
-    res.status(500).json({
-      error: "خطأ في السيرفر.",
-    });
-  }
-});
+  },
+);
 
 router.put(
   "/:id/password",
@@ -158,7 +163,7 @@ router.put(
 
       const result = await pool.query(
         "update users set password_hash = $1 where id = $2",
-        [password_hash, req.params.id]
+        [password_hash, req.params.id],
       );
 
       if (result.rowCount === 0) {
@@ -174,7 +179,7 @@ router.put(
         error: "خطأ في السيرفر.",
       });
     }
-  }
+  },
 );
 
 export default router;
