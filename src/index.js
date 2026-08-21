@@ -32,11 +32,23 @@ const allowedOrigins = (process.env.CORS_ORIGINS || "")
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(
   cors({
-    origin: allowedOrigins.length ? allowedOrigins : true,
+    origin: (origin, callback) => {
+      // Allow requests without Origin, such as curl/server-side requests
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked: ${origin}`));
+    },
     credentials: true,
   })
 );
 app.use(express.json());
+app.set("trust proxy", 1);
 
 // ---- API routes ----
 app.use("/api/auth", authRoutes);

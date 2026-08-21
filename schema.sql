@@ -7,8 +7,8 @@
 -- التشغيل:  psql "postgres://user:pass@host:port/dbname" -f schema.sql
 -- ============================================================
 
-create extension if not exists "pgcrypto"; -- لتوليد UUID
-
+-- create extension if not exists "pgcrypto"; -- لتوليد UUID
+-- pgcrypto is not available on this server
 create type employee_role as enum ('super_admin', 'admin', 'doctor', 'staff');
 
 -- ------------------------------------------------------------
@@ -38,7 +38,7 @@ insert into job_titles (title_ar) values
 -- المستخدمون (موظفو لوحة التحكم) — كلمة المرور مخزّنة كـ bcrypt hash
 -- ------------------------------------------------------------
 create table users (
-  id uuid primary key default gen_random_uuid(),
+  id uuid primary key,
   full_name text not null,
   email text not null unique,
   password_hash text not null,
