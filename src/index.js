@@ -65,10 +65,10 @@ app.use("/api/patients", patientsRoutes);
 app.use("/api/announcements", announcementsRoutes);
 app.use("/api/appointment-requests", appointmentRequestsRoutes);
 app.use("/api/dashboard", dashboardRoutes);
-app.use(
-  "/uploads",
-  express.static(path.resolve("public/uploads"))
-);
+// app.use(
+//   "/uploads",
+//   express.static(path.resolve("public/uploads"))
+// );
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
