@@ -49,22 +49,97 @@ create table users (
   created_at timestamptz not null default now()
 );
 
+-- -- ------------------------------------------------------------
+-- -- الأطباء
+-- -- ------------------------------------------------------------
+-- create table doctors (
+--   id bigserial primary key,
+--   user_id uuid references users (id) on delete set null, -- اختياري: ربط بحساب دخول
+--   name text not null,
+--   title text not null,
+--   specialty text not null,
+--   initials text not null,
+--   image_url text,
+--   bio text,
+--   is_active boolean not null default true,
+--   sort_order int not null default 0,
+--   created_at timestamptz not null default now()
+-- );
+
+
 -- ------------------------------------------------------------
--- الأطباء
+-- الأطباء والملفات المهنية
 -- ------------------------------------------------------------
-create table doctors (
-  id bigserial primary key,
-  user_id uuid references users (id) on delete set null, -- اختياري: ربط بحساب دخول
-  name text not null,
-  title text not null,
-  specialty text not null,
-  initials text not null,
-  image_url text,
-  bio text,
-  is_active boolean not null default true,
-  sort_order int not null default 0,
-  created_at timestamptz not null default now()
+CREATE TABLE doctors (
+  id BIGSERIAL PRIMARY KEY,
+
+  -- ربط اختياري بحساب دخول الموظف/الطبيب
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+
+  -- البيانات الأساسية
+  name TEXT NOT NULL,
+  title TEXT NOT NULL,
+  specialty TEXT NOT NULL,
+  initials TEXT NOT NULL,
+  gender VARCHAR(30),
+  image_url TEXT,
+  bio TEXT,
+
+  -- المؤهلات العلمية والتخرج
+  medical_school TEXT,
+  degree TEXT,
+  graduation_year INTEGER,
+  postgraduate_qualifications TEXT,
+  residency_fellowship TEXT,
+  board_certifications TEXT,
+
+  -- المعلومات المهنية
+  subspecialty TEXT,
+  years_experience INTEGER,
+  languages TEXT[] NOT NULL DEFAULT '{}',
+  clinic_affiliation TEXT,
+
+  -- بيانات الترخيص: لا تعرضها في الملف العام
+  medical_license_number TEXT,
+
+  -- حالة العرض والترتيب
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+
+  -- التواريخ
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+  -- التحقق من صحة البيانات
+  CONSTRAINT doctors_gender_check
+    CHECK (
+      gender IS NULL OR gender IN (
+        'male',
+        'female'
+      )
+    ),
+
+  CONSTRAINT doctors_graduation_year_check
+    CHECK (
+      graduation_year IS NULL OR
+      graduation_year BETWEEN 1900 AND 2100
+    ),
+
+  CONSTRAINT doctors_experience_check
+    CHECK (
+      years_experience IS NULL OR years_experience >= 0
+    )
 );
+
+-- كل حساب دخول يرتبط بملف طبيب واحد كحد أقصى
+CREATE UNIQUE INDEX doctors_user_id_unique
+  ON doctors(user_id)
+  WHERE user_id IS NOT NULL;
+
+-- تسريع البحث عن الأطباء النشطين وترتيبهم
+CREATE INDEX doctors_active_sort_idx
+  ON doctors(is_active, sort_order, id);
+
 
 create table doctor_schedule (
   id bigserial primary key,
