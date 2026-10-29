@@ -25,45 +25,10 @@ dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
-// const allowedOrigins = (process.env.CORS_ORIGINS || "")
-//   .split(",")
-//   .map((s) => s.trim())
-//   .filter(Boolean);
-const allowedOrigins = (
-  process.env.CORS_ORIGINS ||
-  "http://localhost:5173,http://localhost:5174,https://rouh.ly,https://www.rouh.ly,https://dashboard.rouh.ly"
-)
+const allowedOrigins = (process.env.CORS_ORIGINS || "")
   .split(",")
-  .map((origin) => origin.trim().replace(/\/+$/, ""))
+  .map((s) => s.trim())
   .filter(Boolean);
-
-const corsOptions = {
-  origin(origin, callback) {
-    // Allow server-to-server requests and local tools without an Origin header.
-    if (!origin) {
-      return callback(null, true);
-    }
-
-    const normalizedOrigin = origin.replace(/\/+$/, "");
-
-    if (allowedOrigins.includes(normalizedOrigin)) {
-      return callback(null, true);
-    }
-
-    console.warn(`CORS blocked origin: ${origin}`);
-    return callback(new Error(`CORS blocked: ${origin}`));
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
-  optionsSuccessStatus: 204,
-};
-
-// Register CORS before your API routes.
-app.use(cors(corsOptions));
-
-// Explicitly handle browser preflight requests.
-app.options(/.*/, cors(corsOptions));
 
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(
