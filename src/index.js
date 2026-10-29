@@ -30,24 +30,24 @@ const allowedOrigins = (process.env.CORS_ORIGINS || "")
   .map((s) => s.trim())
   .filter(Boolean);
 
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // Allow requests without Origin, such as curl/server-side requests
+        if (!origin) {
+          return callback(null, true);
+        }
+  
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+  
+        return callback(new Error(`CORS blocked: ${origin}`));
+      },
+      credentials: true,
+    })
+  );
 app.use(helmet({ crossOriginResourcePolicy: false }));
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests without Origin, such as curl/server-side requests
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error(`CORS blocked: ${origin}`));
-    },
-    credentials: true,
-  })
-);
 app.use(express.json());
 app.set("trust proxy", 1);
 
