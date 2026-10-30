@@ -320,7 +320,7 @@ router.post(
       return res.status(400).json({ error: "يرجى اختيار صورة." });
     }
 
-    const image_url = `/uploads/doctors/${req.file.filename}`;
+    const image_url = `https://api.rouh.ly/uploads/doctors/${req.file.filename}`;
 
     res.status(201).json({ image_url });
   }
