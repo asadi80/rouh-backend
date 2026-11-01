@@ -70,22 +70,26 @@ create table users (
 -- ------------------------------------------------------------
 -- الأطباء والملفات المهنية
 -- ------------------------------------------------------------
-CREATE TABLE doctors (
+CCREATE TABLE doctors (
   id BIGSERIAL PRIMARY KEY,
 
-  -- ربط اختياري بحساب دخول الموظف/الطبيب
+  -- Login account
   user_id UUID REFERENCES users(id) ON DELETE SET NULL,
 
-  -- البيانات الأساسية
+  -- Basic information
   name TEXT NOT NULL,
   title TEXT NOT NULL,
-  specialty TEXT NOT NULL,
   initials TEXT NOT NULL,
+
+  -- Professional classification
+  role VARCHAR(30) NOT NULL DEFAULT 'doctor',
+  specialties TEXT[] NOT NULL DEFAULT '{}',
+
   gender VARCHAR(30),
   image_url TEXT,
   bio TEXT,
 
-  -- المؤهلات العلمية والتخرج
+  -- Education and qualifications
   medical_school TEXT,
   degree TEXT,
   graduation_year INTEGER,
@@ -93,30 +97,32 @@ CREATE TABLE doctors (
   residency_fellowship TEXT,
   board_certifications TEXT,
 
-  -- المعلومات المهنية
+  -- Professional information
   subspecialty TEXT,
   years_experience INTEGER,
   languages TEXT[] NOT NULL DEFAULT '{}',
   clinic_affiliation TEXT,
 
-  -- بيانات الترخيص: لا تعرضها في الملف العام
+  -- Medical license
   medical_license_number TEXT,
 
-  -- حالة العرض والترتيب
+  -- Display settings
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   sort_order INTEGER NOT NULL DEFAULT 0,
 
-  -- التواريخ
+  -- Timestamps
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-  -- التحقق من صحة البيانات
+  -- Validation
   CONSTRAINT doctors_gender_check
     CHECK (
-      gender IS NULL OR gender IN (
-        'male',
-        'female'
-      )
+      gender IS NULL OR gender IN ('male', 'female')
+    ),
+
+  CONSTRAINT doctors_role_check
+    CHECK (
+      role IN ('doctor', 'specialist')
     ),
 
   CONSTRAINT doctors_graduation_year_check
@@ -131,16 +137,18 @@ CREATE TABLE doctors (
     )
 );
 
--- كل حساب دخول يرتبط بملف طبيب واحد كحد أقصى
+-- One login account per doctor profile
 CREATE UNIQUE INDEX doctors_user_id_unique
   ON doctors(user_id)
   WHERE user_id IS NOT NULL;
 
--- تسريع البحث عن الأطباء النشطين وترتيبهم
+-- Active doctors ordering
 CREATE INDEX doctors_active_sort_idx
   ON doctors(is_active, sort_order, id);
 
-
+-- Search by specialty
+CREATE INDEX doctors_specialties_idx
+  ON doctors USING GIN(specialties);
 create table doctor_schedule (
   id bigserial primary key,
   doctor_id bigint not null references doctors (id) on delete cascade,
