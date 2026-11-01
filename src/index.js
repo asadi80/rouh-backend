@@ -19,6 +19,7 @@ import patientsRoutes from "./routes/patients.js";
 import announcementsRoutes from "./routes/announcements.js";
 import appointmentRequestsRoutes from "./routes/appointmentRequests.js";
 import dashboardRoutes from "./routes/dashboard.js";
+import specialtiesRouter from "./routes/specialties.js";
 
 dotenv.config();
 
@@ -65,6 +66,7 @@ app.use("/api/patients", patientsRoutes);
 app.use("/api/announcements", announcementsRoutes);
 app.use("/api/appointment-requests", appointmentRequestsRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/specialties", specialtiesRouter);
 app.use(
   "/uploads",
   express.static(path.resolve("public/uploads"))
