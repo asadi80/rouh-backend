@@ -26,31 +26,62 @@ dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
-const allowedOrigins = (process.env.CORS_ORIGINS || "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
+// ============================================================
+// CORS CONFIGURATION
+// ============================================================
 
-  app.use(
-    cors({
-      origin: (origin, callback) => {
-        // Allow requests without Origin, such as curl/server-side requests
-        if (!origin) {
-          return callback(null, true);
-        }
-  
-        if (allowedOrigins.includes(origin)) {
-          return callback(null, true);
-        }
-  
-        return callback(new Error(`CORS blocked: ${origin}`));
-      },
-      credentials: true,
-    })
-  );
+const allowedOrigins = [
+  "https://dashboard.rouh.ly",
+  "https://rouh.ly",
+  "https://www.rouh.ly",
+  "http://localhost:5173",
+  "http://localhost:5174",
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow server-to-server requests
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    console.error("❌ CORS blocked origin:", origin);
+    return callback(null, false);
+  },
+
+  credentials: true,
+
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Accept",
+    "Origin",
+    "X-Requested-With",
+  ],
+
+  optionsSuccessStatus: 204,
+};
+
+// IMPORTANT: CORS must be before routes and authentication middleware
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
+
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(express.json());
 app.set("trust proxy", 1);
+
+app.use((req, res, next) => {
+  console.log(
+    `[API] ${req.method} ${req.originalUrl} | Origin: ${req.headers.origin || "none"}`
+  );
+  next();
+});
 
 // ---- API routes ----
 app.use("/api/auth", authRoutes);
