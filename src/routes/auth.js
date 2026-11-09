@@ -21,48 +21,64 @@ const loginLimiter = rateLimit({
 // تسجيل الدخول
 // ============================================================
 router.post("/login", loginLimiter, async (req, res) => {
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body || {};
 
-  if (!email || !password) {
-    return res.status(400).json({
-      error: "البريد الإلكتروني وكلمة المرور مطلوبان.",
+    if (!email || !password) {
+      return res.status(400).json({
+        error: "البريد الإلكتروني وكلمة المرور مطلوبان.",
+      });
+    }
+
+    console.log("[LOGIN] Attempt:", email.toLowerCase().trim());
+
+    const { rows } = await pool.query(
+      "SELECT * FROM users WHERE email = $1",
+      [email.toLowerCase().trim()]
+    );
+
+    const user = rows[0];
+
+    if (!user || !user.is_active) {
+      return res.status(401).json({
+        error: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+      });
+    }
+
+    const valid = await bcrypt.compare(
+      password,
+      user.password_hash
+    );
+
+    if (!valid) {
+      return res.status(401).json({
+        error: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+      });
+    }
+
+    const token = signToken(user);
+
+    console.log("[LOGIN] Success:", user.email);
+
+    return res.json({
+      token,
+      user: {
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        role: user.role,
+        job_title: user.job_title,
+        must_change_password: user.must_change_password,
+      },
+    });
+
+  } catch (error) {
+    console.error("[LOGIN ERROR]", error);
+
+    return res.status(500).json({
+      error: "حدث خطأ أثناء تسجيل الدخول.",
     });
   }
-
-  const { rows } = await pool.query(
-    "select * from users where email = $1",
-    [email.toLowerCase().trim()]
-  );
-
-  const user = rows[0];
-
-  if (!user || !user.is_active) {
-    return res.status(401).json({
-      error: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
-    });
-  }
-
-  const valid = await bcrypt.compare(password, user.password_hash);
-
-  if (!valid) {
-    return res.status(401).json({
-      error: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
-    });
-  }
-
-  const token = signToken(user);
-
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      full_name: user.full_name,
-      email: user.email,
-      role: user.role,
-      job_title: user.job_title,
-      must_change_password: user.must_change_password,
-    },
-  });
 });
 
 
