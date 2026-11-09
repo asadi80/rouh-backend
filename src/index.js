@@ -70,7 +70,7 @@ const corsOptions = {
 
 // IMPORTANT: CORS must be before routes and authentication middleware
 app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(express.json());
