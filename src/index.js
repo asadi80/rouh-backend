@@ -26,6 +26,7 @@ import announcementsRoutes from "./routes/announcements.js";
 import appointmentRequestsRoutes from "./routes/appointmentRequests.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import specialtiesRouter from "./routes/specialties.js";
+import serverLogsRoutes from "./routes/serverLogs.js";
 
 // ============================================================
 // INITIALIZATION
@@ -198,6 +199,7 @@ app.use("/api/announcements", announcementsRoutes);
 app.use("/api/appointment-requests", appointmentRequestsRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/specialties", specialtiesRouter);
+app.use("/api/server/logs", serverLogsRoutes);
 
 // ============================================================
 // UPLOADS
